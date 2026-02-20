@@ -1,5 +1,8 @@
 # B-AI Chat Demo
 
+![CleanShot 2026-02-20 at 12 33 12@2x](https://github.com/user-attachments/assets/9472c638-2edd-4f50-9fb8-3f26821f33db)
+
+
 React + Vite chat UI (shadcn/ui + motion) with a local backend that calls OpenRouter.
 
 ## Quick Start

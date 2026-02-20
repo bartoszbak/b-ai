@@ -31,17 +31,15 @@ export function TypingStatus() {
 
   return (
     <motion.div
-      layout
       key="typing-status"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="flex"
     >
       <motion.div
-        layout
-        initial={{ opacity: 0.7, y: 0, filter: "blur(0px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        initial={{ opacity: 0.7, filter: "blur(0px)" }}
+        animate={{ opacity: 1, filter: "blur(0px)" }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="w-full max-w-none py-1 pl-3 pr-1 text-[15px] leading-7 whitespace-pre-wrap text-foreground"
       >

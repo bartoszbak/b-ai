@@ -12,7 +12,6 @@ import { SettingsPanel } from "@/features/settings/components/settings-panel"
 const initialSettings: ChatSettings = {
   model: "openai/gpt-4.1-nano",
   temperature: 0.6,
-  typingSpeed: 1.1,
   autoReply: true,
   useOpenRouter: true,
   showProcessingIndicator: true,
@@ -188,10 +187,9 @@ function App() {
           completionTokens = estimateTokens(assistantText)
         }
       } else {
-        const mockDelayMs = shouldShowIndicator
-          ? Math.max(currentSettings.typingSpeed * 1000, TYPING_MIN_DURATION_MS)
-          : currentSettings.typingSpeed * 1000
-        await wait(mockDelayMs)
+        if (shouldShowIndicator) {
+          await wait(TYPING_MIN_DURATION_MS)
+        }
         setShowStatusIndicator(false)
         assistantText = createAssistantReply(promptText, currentSettings)
         completionTokens = estimateTokens(assistantText)
@@ -306,8 +304,9 @@ function App() {
     await submitUserPrompt(draft)
   }
 
-  const sendStarterPrompt = async (prompt: string) => {
-    await submitUserPrompt(prompt)
+  const sendStarterPrompt = (prompt: string) => {
+    const nextDraft = prompt.endsWith(" ") ? prompt : `${prompt} `
+    setDraft(nextDraft)
   }
 
   const previewStatusIndicator = async () => {

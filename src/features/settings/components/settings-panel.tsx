@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -53,13 +52,10 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   return (
     <Card className="h-full border-slate-200 bg-white/80 py-0 backdrop-blur">
-      <CardHeader className="px-5 pt-5">
-        <CardTitle className="text-base font-semibold tracking-tight">
+      <CardHeader className="px-5 pt-5 mb-2">
+        <CardTitle className="text-xl font-semibold tracking-tight">
           Chat Settings
         </CardTitle>
-        <CardDescription>
-          Configure behavior for the AI chat preview.
-        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-5 px-5 pb-5">
@@ -92,6 +88,17 @@ export function SettingsPanel({
           </Select>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="persona">Assistant persona</Label>
+          <Textarea
+            id="persona"
+            value={settings.persona}
+            onChange={(event) => onSettingsChange({ persona: event.target.value })}
+            placeholder="e.g. Product strategist"
+            className="min-h-20 bg-white"
+          />
+        </div>
+
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <Label htmlFor="temperature">Temperature</Label>
@@ -107,25 +114,6 @@ export function SettingsPanel({
             value={[settings.temperature]}
             onValueChange={([value]) =>
               onSettingsChange({ temperature: Number(value.toFixed(1)) })
-            }
-          />
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <Label htmlFor="typing-speed">Typing speed</Label>
-            <span className="text-xs text-muted-foreground">
-              {settings.typingSpeed.toFixed(1)}s
-            </span>
-          </div>
-          <Slider
-            id="typing-speed"
-            min={0.4}
-            max={2.2}
-            step={0.1}
-            value={[settings.typingSpeed]}
-            onValueChange={([value]) =>
-              onSettingsChange({ typingSpeed: Number(value.toFixed(1)) })
             }
           />
         </div>
@@ -181,17 +169,6 @@ export function SettingsPanel({
               }
             />
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="persona">Assistant persona</Label>
-          <Textarea
-            id="persona"
-            value={settings.persona}
-            onChange={(event) => onSettingsChange({ persona: event.target.value })}
-            placeholder="e.g. Product strategist"
-            className="min-h-20 bg-white"
-          />
         </div>
 
         <p className="text-xs text-muted-foreground">

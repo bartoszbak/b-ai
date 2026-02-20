@@ -1,7 +1,7 @@
 import { motion } from "motion/react"
 
 import { Button } from "@/components/ui/button"
-import { starterPrompts } from "@/features/chat/data/starter-prompts"
+import { CHAT_PROMPTS } from "@/features/chat/data/chat-prompts"
 
 interface ChatStarterPromptsProps {
   model: string
@@ -49,18 +49,18 @@ export function ChatStarterPrompts({
       </div>
 
       <ul className="space-y-0.5">
-        {starterPrompts.map((prompt) => {
+        {CHAT_PROMPTS.map((prompt) => {
           const Icon = prompt.icon
           return (
             <li key={prompt.id}>
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => onPromptSelect(prompt.label)}
+                onClick={() => onPromptSelect(prompt.prompt)}
                 className="h-auto w-full justify-start gap-2 rounded-lg text-[14px] leading-4 font-normal text-foreground hover:bg-slate-100/70"
               >
                 <Icon className="size-4 text-muted-foreground" />
-                <span>{prompt.label}</span>
+                <span>{prompt.prompt}</span>
               </Button>
             </li>
           )

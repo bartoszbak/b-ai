@@ -26,7 +26,6 @@ export interface ChatSettings {
     | "openai/gpt-4.1"
     | "openai/o4-mini"
   temperature: number
-  typingSpeed: number
   autoReply: boolean
   useOpenRouter: boolean
   showProcessingIndicator: boolean

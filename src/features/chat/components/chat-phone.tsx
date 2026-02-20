@@ -35,6 +35,7 @@ export function ChatPhone({
   onUseStarterPrompt,
 }: ChatPhoneProps) {
   const endRef = useRef<HTMLDivElement | null>(null)
+  const hasSentMessage = messages.some((message) => message.role === "user")
   const canRedo = (index: number) => {
     for (let pointer = index - 1; pointer >= 0; pointer -= 1) {
       if (messages[pointer].role === "user") {
@@ -88,6 +89,7 @@ export function ChatPhone({
           <ChatComposer
             draft={draft}
             disabled={isTyping}
+            hasSentMessage={hasSentMessage}
             onDraftChange={onDraftChange}
             onSend={onSend}
           />

@@ -112,6 +112,7 @@ function App() {
       model: currentSettings.model,
       temperature: currentSettings.temperature,
     }
+    let stopLivePlayback: (() => void) | null = null
 
     try {
       let assistantText = ""
@@ -121,16 +122,32 @@ function App() {
 
       if (currentSettings.useOpenRouter) {
         source = "live"
-        const pendingChunks: string[] = []
         let canRenderChunks = false
-        setActiveStreamMessageId(assistantMessageId)
+        let streamFinished = false
+        let renderedText = ""
+        let streamedText = ""
+        let queuedText = ""
+        let flushTimeoutId: number | null = null
+        let resolveQueueDrained: (() => void) | null = null
+        const queueDrained = new Promise<void>((resolve) => {
+          resolveQueueDrained = resolve
+        })
 
-        const appendChunk = (chunk: string) => {
-          assistantText += chunk
+        const finishQueueDrain = () => {
+          if (!resolveQueueDrained) {
+            return
+          }
+          resolveQueueDrained()
+          resolveQueueDrained = null
+        }
+
+        const appendRenderedText = (text: string) => {
+          renderedText += text
+          assistantText = renderedText
           upsertAssistantMessage(assistantMessageId, (previous) => ({
             id: assistantMessageId,
             role: "assistant",
-            text: assistantText,
+            text: renderedText,
             createdAt: previous?.createdAt ?? responseCreatedAt,
             meta: {
               ...baseMeta,
@@ -139,16 +156,61 @@ function App() {
           }))
         }
 
+        const maybeFinishQueue = () => {
+          if (streamFinished && queuedText.length === 0 && flushTimeoutId === null) {
+            finishQueueDrain()
+          }
+        }
+
+        const flushQueuedText = () => {
+          if (!canRenderChunks || flushTimeoutId !== null) {
+            return
+          }
+
+          const step = () => {
+            flushTimeoutId = null
+
+            if (!canRenderChunks) {
+              return
+            }
+
+            if (!queuedText.length) {
+              maybeFinishQueue()
+              return
+            }
+
+            const nextSlice = queuedText.slice(0, 20)
+            queuedText = queuedText.slice(nextSlice.length)
+            appendRenderedText(nextSlice)
+            flushTimeoutId = window.setTimeout(step, 18)
+          }
+
+          step()
+        }
+
+        const enqueueChunk = (chunk: string) => {
+          streamedText += chunk
+          queuedText += chunk
+          flushQueuedText()
+        }
+
+        stopLivePlayback = () => {
+          canRenderChunks = false
+          streamFinished = true
+          queuedText = ""
+          if (flushTimeoutId !== null) {
+            window.clearTimeout(flushTimeoutId)
+            flushTimeoutId = null
+          }
+          finishQueueDrain()
+        }
+
+        setActiveStreamMessageId(assistantMessageId)
+
         const streamPromise = streamChatRequest(
           conversation,
           currentSettings,
-          (chunk) => {
-            if (canRenderChunks) {
-              appendChunk(chunk)
-              return
-            }
-            pendingChunks.push(chunk)
-          }
+          (chunk) => enqueueChunk(chunk)
         ).then(
           (response) => ({ ok: true as const, response }),
           (error) => ({ ok: false as const, error })
@@ -170,7 +232,7 @@ function App() {
         }))
 
         canRenderChunks = true
-        pendingChunks.forEach(appendChunk)
+        flushQueuedText()
 
         const streamResult = await streamPromise
         if (!streamResult.ok) {
@@ -178,7 +240,20 @@ function App() {
         }
 
         const response = streamResult.response
-        assistantText = response.text
+        if (typeof response.text === "string" && response.text !== streamedText) {
+          if (response.text.startsWith(renderedText)) {
+            queuedText += response.text.slice(renderedText.length)
+          } else {
+            renderedText = ""
+            queuedText = response.text
+          }
+          streamedText = response.text
+          flushQueuedText()
+        }
+        streamFinished = true
+        maybeFinishQueue()
+        await queueDrained
+        assistantText = streamedText
 
         if (response.usage) {
           promptTokens = response.usage.promptTokens
@@ -243,6 +318,7 @@ function App() {
         ...previous,
         errorCount: previous.errorCount + 1,
       }))
+      stopLivePlayback?.()
 
       upsertAssistantMessage(assistantMessageId, () => ({
         id: assistantMessageId,
@@ -259,6 +335,7 @@ function App() {
         },
       }))
     } finally {
+      stopLivePlayback?.()
       setIsTyping(false)
       setShowStatusIndicator(false)
       setActiveStreamMessageId(null)

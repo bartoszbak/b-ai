@@ -11,6 +11,7 @@ interface ChatComposerProps {
   draft: string
   disabled?: boolean
   hasSentMessage: boolean
+  assistantMessageCount: number
   onDraftChange: (value: string) => void
   onSend: () => void
 }
@@ -19,15 +20,21 @@ export function ChatComposer({
   draft,
   disabled = false,
   hasSentMessage,
+  assistantMessageCount,
   onDraftChange,
   onSend,
 }: ChatComposerProps) {
   const canSend = draft.trim().length > 0 && !disabled
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [lastInteractionAssistantCount, setLastInteractionAssistantCount] =
+    useState<number | null>(null)
   const promptPlaceholders = useMemo(() => CHAT_PROMPT_PLACEHOLDERS, [])
   const isDraftEmpty = draft.trim().length === 0
   const shouldShowRotatorPlaceholder = hasSentMessage && isDraftEmpty
-  const shouldRotatePlaceholders = shouldShowRotatorPlaceholder
+  const hasInteractedSinceLatestAssistantReply =
+    lastInteractionAssistantCount === assistantMessageCount
+  const shouldRotatePlaceholders =
+    shouldShowRotatorPlaceholder && !hasInteractedSinceLatestAssistantReply
 
   useEffect(() => {
     if (!shouldRotatePlaceholders || promptPlaceholders.length <= 1) {
@@ -72,7 +79,11 @@ export function ChatComposer({
         <Input
           value={draft}
           disabled={disabled}
-          onChange={(event) => onDraftChange(event.target.value)}
+          onFocus={() => setLastInteractionAssistantCount(assistantMessageCount)}
+          onChange={(event) => {
+            setLastInteractionAssistantCount(assistantMessageCount)
+            onDraftChange(event.target.value)
+          }}
           placeholder={shouldShowRotatorPlaceholder ? "" : placeholderText}
           className="h-12 rounded-full border-0 bg-neutral-200/80 pl-5 pr-12 text-[1.05rem] shadow-none focus-visible:ring-0"
         />

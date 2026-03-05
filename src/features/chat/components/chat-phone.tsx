@@ -17,6 +17,7 @@ interface ChatPhoneProps {
   activeStreamMessageId: string | null
   activeModel: string
   showResponseIconsOnHover: boolean
+  moveBubblesOnIncomingMessage: boolean
   onDraftChange: (value: string) => void
   onSend: () => void
   onRedoAssistantMessage: (assistantMessageId: string) => void
@@ -31,6 +32,7 @@ export function ChatPhone({
   activeStreamMessageId,
   activeModel,
   showResponseIconsOnHover,
+  moveBubblesOnIncomingMessage,
   onDraftChange,
   onSend,
   onRedoAssistantMessage,
@@ -116,7 +118,14 @@ export function ChatPhone({
           ref={scrollWrapperRef}
           className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-6 pt-0 pb-0"
         >
-          <div ref={scrollContentRef} className="space-y-3 pb-3 pt-6">
+          <motion.div
+            ref={scrollContentRef}
+            layout={moveBubblesOnIncomingMessage}
+            transition={{
+              layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+            }}
+            className="space-y-3 pb-3 pt-6"
+          >
             <AnimatePresence initial={false}>
               <ChatStarterPrompts
                 model={activeModel}
@@ -128,6 +137,7 @@ export function ChatPhone({
                   message={message}
                   isStreaming={message.id === activeStreamMessageId}
                   isBusy={isTyping}
+                  animateLayoutShift={moveBubblesOnIncomingMessage}
                   showActionsOnHover={showResponseIconsOnHover}
                   onRedo={
                     message.role === "assistant" && canRedo(index)
@@ -139,7 +149,7 @@ export function ChatPhone({
               {showStatusIndicator ? <TypingStatus /> : null}
             </AnimatePresence>
             <div ref={endRef} />
-          </div>
+          </motion.div>
         </div>
 
         <div className="bg-white/70 px-6 py-6">

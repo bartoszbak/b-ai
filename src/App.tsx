@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react"
-import { motion } from "motion/react"
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 
+import { Button } from "@/components/ui/button"
 import { streamChatRequest } from "@/features/chat/api/send-chat"
 import { TYPING_MIN_DURATION_MS } from "@/features/chat/constants"
 import { starterMessages } from "@/features/chat/data/starter-messages"
@@ -8,6 +10,7 @@ import { ChatPhone } from "@/features/chat/components/chat-phone"
 import type { ChatMessage, ChatMessageMeta, ChatSettings } from "@/features/chat/types"
 import { createAssistantReply } from "@/features/chat/utils/create-assistant-reply"
 import { SettingsPanel } from "@/features/settings/components/settings-panel"
+import { cn } from "@/lib/utils"
 
 const initialSettings: ChatSettings = {
   model: "openai/gpt-4.1-nano",
@@ -16,6 +19,7 @@ const initialSettings: ChatSettings = {
   useOpenRouter: true,
   showProcessingIndicator: true,
   showResponseIconsOnHover: false,
+  moveBubblesOnIncomingMessage: false,
   sendAsOtherPerson: false,
   conciseMode: false,
   persona: "Helpful AI",
@@ -52,6 +56,14 @@ function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.trim().length / 4))
 }
 
+function isDesktopViewport() {
+  if (typeof window === "undefined") {
+    return true
+  }
+
+  return window.matchMedia("(min-width: 768px)").matches
+}
+
 function App() {
   const [settings, setSettings] = useState<ChatSettings>(initialSettings)
   const [messages, setMessages] = useState(starterMessages)
@@ -61,6 +73,8 @@ function App() {
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(
     null
   )
+  const [isDesktopLayout, setIsDesktopLayout] = useState(isDesktopViewport)
+  const [showSettingsPanel, setShowSettingsPanel] = useState(isDesktopViewport)
   const [lastError, setLastError] = useState<string | null>(null)
   const [usageStats, setUsageStats] = useState<UsageStats>(initialUsageStats)
   const timeoutIds = useRef<number[]>([])
@@ -69,6 +83,26 @@ function App() {
     return () => {
       timeoutIds.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
       timeoutIds.current = []
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    const mediaQuery = window.matchMedia("(min-width: 768px)")
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktopLayout(event.matches)
+      if (!event.matches) {
+        setShowSettingsPanel(false)
+      }
+    }
+
+    setIsDesktopLayout(mediaQuery.matches)
+    mediaQuery.addEventListener("change", handleChange)
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange)
     }
   }, [])
 
@@ -446,32 +480,107 @@ function App() {
   }
 
   return (
-    <main className="h-dvh w-screen overflow-hidden">
-      <div className="grid h-full w-full grid-cols-1 md:grid-cols-4">
+    <main className="relative h-dvh w-screen overflow-hidden">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={() => setShowSettingsPanel((previous) => !previous)}
+        className="absolute bottom-8 left-8 z-40 size-10 rounded-full bg-white/92 shadow-sm backdrop-blur transition-transform duration-300 ease-out"
+        aria-label={showSettingsPanel ? "Hide chat settings" : "Show chat settings"}
+      >
+        {showSettingsPanel ? (
+          <PanelLeftClose className="size-4" />
+        ) : (
+          <PanelLeftOpen className="size-4" />
+        )}
+      </Button>
+
+      <AnimatePresence>
+        {!isDesktopLayout && showSettingsPanel ? (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close chat settings"
+              onClick={() => setShowSettingsPanel(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute inset-0 z-20 bg-slate-950/18 backdrop-blur-[1px]"
+            />
+            <motion.aside
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="absolute inset-3 z-30 min-h-0"
+            >
+              <SettingsPanel
+                settings={settings}
+                messageCount={messages.length}
+                stats={stats}
+                isBusy={isTyping}
+                lastError={lastError}
+                onSettingsChange={(changes) =>
+                  setSettings((previous) => ({ ...previous, ...changes }))
+                }
+                onPlayStatusIndicator={previewStatusIndicator}
+              />
+            </motion.aside>
+          </>
+        ) : null}
+      </AnimatePresence>
+
+      <motion.div className="relative h-full w-full">
         <motion.aside
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="h-full min-h-0 p-3 md:col-span-1 md:p-4"
+          initial={false}
+          animate={
+            isDesktopLayout
+              ? {
+                  x: showSettingsPanel ? 0 : -32,
+                  opacity: showSettingsPanel ? 1 : 0,
+                }
+              : {
+                  x: -32,
+                  opacity: 0,
+                }
+          }
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+          className={cn(
+            "absolute inset-y-0 left-0 z-10 hidden w-[360px] min-h-0 md:block",
+            showSettingsPanel && isDesktopLayout
+              ? "pointer-events-auto"
+              : "pointer-events-none"
+          )}
         >
-          <SettingsPanel
-            settings={settings}
-            messageCount={messages.length}
-            stats={stats}
-            isBusy={isTyping}
-            lastError={lastError}
-            onSettingsChange={(changes) =>
-              setSettings((previous) => ({ ...previous, ...changes }))
-            }
-            onPlayStatusIndicator={previewStatusIndicator}
-          />
+          <div className="h-full min-h-0 p-3 pr-0 md:p-4 md:pr-0">
+            <SettingsPanel
+              settings={settings}
+              messageCount={messages.length}
+              stats={stats}
+              isBusy={isTyping}
+              lastError={lastError}
+              onSettingsChange={(changes) =>
+                setSettings((previous) => ({ ...previous, ...changes }))
+              }
+              onPlayStatusIndicator={previewStatusIndicator}
+            />
+          </div>
         </motion.aside>
 
         <motion.section
           initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
-          className="flex h-full min-h-0 items-center justify-center p-3 md:col-span-3 md:p-4"
+          animate={{
+            opacity: 1,
+            x: 0,
+            marginLeft: isDesktopLayout && showSettingsPanel ? 360 : 0,
+          }}
+          transition={{
+            duration: 0.24,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          className="flex h-full min-h-0 items-center justify-center p-3 md:p-4"
         >
           <ChatPhone
             messages={messages}
@@ -481,13 +590,14 @@ function App() {
             activeStreamMessageId={activeStreamMessageId}
             activeModel={settings.model}
             showResponseIconsOnHover={settings.showResponseIconsOnHover}
+            moveBubblesOnIncomingMessage={settings.moveBubblesOnIncomingMessage}
             onDraftChange={setDraft}
             onSend={sendMessage}
             onRedoAssistantMessage={redoAssistantMessage}
             onUseStarterPrompt={sendStarterPrompt}
           />
         </motion.section>
-      </div>
+      </motion.div>
     </main>
   )
 }

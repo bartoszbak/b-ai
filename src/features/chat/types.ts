@@ -30,6 +30,7 @@ export interface ChatSettings {
   useOpenRouter: boolean
   showProcessingIndicator: boolean
   showResponseIconsOnHover: boolean
+  moveBubblesOnIncomingMessage: boolean
   sendAsOtherPerson: boolean
   conciseMode: boolean
   persona: string

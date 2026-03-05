@@ -99,6 +99,17 @@ export function SettingsPanel({
           />
         </div>
 
+        <div className="flex items-center justify-between">
+          <Label htmlFor="concise-mode">Concise mode</Label>
+          <Switch
+            id="concise-mode"
+            checked={settings.conciseMode}
+            onCheckedChange={(checked) =>
+              onSettingsChange({ conciseMode: checked })
+            }
+          />
+        </div>
+
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <Label htmlFor="temperature">Temperature</Label>
@@ -166,6 +177,18 @@ export function SettingsPanel({
             />
           </div>
           <div className="flex items-center justify-between">
+            <Label htmlFor="move-bubbles-on-incoming-message">
+              Move bubbles on incoming message
+            </Label>
+            <Switch
+              id="move-bubbles-on-incoming-message"
+              checked={settings.moveBubblesOnIncomingMessage}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ moveBubblesOnIncomingMessage: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
             <Label htmlFor="send-as-other-person">
               Send as other person
             </Label>
@@ -187,16 +210,6 @@ export function SettingsPanel({
           >
             Play status indicator
           </Button>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="concise-mode">Concise mode</Label>
-            <Switch
-              id="concise-mode"
-              checked={settings.conciseMode}
-              onCheckedChange={(checked) =>
-                onSettingsChange({ conciseMode: checked })
-              }
-            />
-          </div>
         </div>
 
         <p className="text-xs text-muted-foreground">

@@ -23,9 +23,15 @@ app.post("/api/chat", async (req, res) => {
     ? messages
         .filter(
           (message) =>
-            (message?.role === "assistant" || message?.role === "user") &&
+            (message?.role === "assistant" ||
+              message?.role === "user" ||
+              message?.role === "other") &&
             typeof message?.text === "string"
         )
+        .map((message) => ({
+          ...message,
+          role: message.role === "other" ? "user" : message.role,
+        }))
         .slice(-20)
     : []
 
@@ -155,9 +161,15 @@ app.post("/api/chat/stream", async (req, res) => {
     ? messages
         .filter(
           (message) =>
-            (message?.role === "assistant" || message?.role === "user") &&
+            (message?.role === "assistant" ||
+              message?.role === "user" ||
+              message?.role === "other") &&
             typeof message?.text === "string"
         )
+        .map((message) => ({
+          ...message,
+          role: message.role === "other" ? "user" : message.role,
+        }))
         .slice(-20)
     : []
 

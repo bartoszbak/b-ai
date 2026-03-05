@@ -15,6 +15,9 @@ const initialSettings: ChatSettings = {
   autoReply: true,
   useOpenRouter: true,
   showProcessingIndicator: true,
+  showResponseIconsOnHover: false,
+  moveBubblesOnIncomingMessage: false,
+  sendAsOtherPerson: false,
   conciseMode: false,
   persona: "Helpful AI",
 }
@@ -353,9 +356,10 @@ function App() {
     }
 
     const currentSettings = { ...settings }
+    const sendAsOtherPerson = currentSettings.sendAsOtherPerson
     const nextMessage: ChatMessage = {
       id: crypto.randomUUID(),
-      role: "user",
+      role: sendAsOtherPerson ? "other" : "user",
       text: trimmedMessage,
       createdAt: Date.now(),
     }
@@ -364,7 +368,7 @@ function App() {
     setMessages(conversation)
     setDraft("")
 
-    if (!currentSettings.autoReply) {
+    if (!currentSettings.autoReply || sendAsOtherPerson) {
       setLastError(null)
       return
     }
@@ -434,7 +438,7 @@ function App() {
 
   const sentCount = messages.filter((message) => message.role === "user").length
   const receivedCount = messages.filter(
-    (message) => message.role === "assistant"
+    (message) => message.role === "assistant" || message.role === "other"
   ).length
   const stats = {
     sentCount,
@@ -477,6 +481,8 @@ function App() {
             showStatusIndicator={showStatusIndicator}
             activeStreamMessageId={activeStreamMessageId}
             activeModel={settings.model}
+            showResponseIconsOnHover={settings.showResponseIconsOnHover}
+            moveBubblesOnIncomingMessage={settings.moveBubblesOnIncomingMessage}
             onDraftChange={setDraft}
             onSend={sendMessage}
             onRedoAssistantMessage={redoAssistantMessage}

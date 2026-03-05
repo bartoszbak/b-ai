@@ -1,4 +1,4 @@
-export type ChatRole = "assistant" | "user"
+export type ChatRole = "assistant" | "user" | "other"
 
 export interface ChatMessageMeta {
   model?: ChatSettings["model"]
@@ -29,6 +29,9 @@ export interface ChatSettings {
   autoReply: boolean
   useOpenRouter: boolean
   showProcessingIndicator: boolean
+  showResponseIconsOnHover: boolean
+  moveBubblesOnIncomingMessage: boolean
+  sendAsOtherPerson: boolean
   conciseMode: boolean
   persona: string
 }

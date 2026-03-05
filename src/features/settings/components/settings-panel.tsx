@@ -132,11 +132,15 @@ export function SettingsPanel({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="auto-reply">Auto reply</Label>
+            <Label htmlFor="send-without-ai-response">
+              Send without AI response
+            </Label>
             <Switch
-              id="auto-reply"
-              checked={settings.autoReply}
-              onCheckedChange={(checked) => onSettingsChange({ autoReply: checked })}
+              id="send-without-ai-response"
+              checked={!settings.autoReply}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ autoReply: !checked })
+              }
             />
           </div>
           <div className="flex items-center justify-between">
@@ -146,6 +150,42 @@ export function SettingsPanel({
               checked={settings.showProcessingIndicator}
               onCheckedChange={(checked) =>
                 onSettingsChange({ showProcessingIndicator: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-response-icons-on-hover">
+              Show AI response icons on hover
+            </Label>
+            <Switch
+              id="show-response-icons-on-hover"
+              checked={settings.showResponseIconsOnHover}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ showResponseIconsOnHover: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="move-bubbles-on-incoming-message">
+              Move bubbles on incoming message
+            </Label>
+            <Switch
+              id="move-bubbles-on-incoming-message"
+              checked={settings.moveBubblesOnIncomingMessage}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ moveBubblesOnIncomingMessage: checked })
+              }
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="send-as-other-person">
+              Send as other person
+            </Label>
+            <Switch
+              id="send-as-other-person"
+              checked={settings.sendAsOtherPerson}
+              onCheckedChange={(checked) =>
+                onSettingsChange({ sendAsOtherPerson: checked })
               }
             />
           </div>

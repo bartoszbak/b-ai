@@ -54,7 +54,7 @@ export async function streamChatRequest(
       signal: controller.signal,
       body: JSON.stringify({
         messages: messages.map((message) => ({
-          role: message.role,
+          role: message.role === "other" ? "user" : message.role,
           text: message.text,
         })),
         settings,

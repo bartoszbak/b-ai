@@ -16,6 +16,8 @@ interface ChatBubbleProps {
   message: ChatMessage
   isStreaming?: boolean
   isBusy?: boolean
+  animateLayoutShift?: boolean
+  showActionsOnHover?: boolean
   onRedo?: (assistantMessageId: string) => void
 }
 
@@ -36,9 +38,12 @@ export function ChatBubble({
   message,
   isStreaming = false,
   isBusy = false,
+  animateLayoutShift = false,
+  showActionsOnHover = false,
   onRedo,
 }: ChatBubbleProps) {
   const isUser = message.role === "user"
+  const isOther = message.role === "other"
   const hasText = message.text.trim().length > 0
   const [showMeta, setShowMeta] = useState(false)
   const metaRef = useRef<HTMLDivElement | null>(null)
@@ -65,16 +70,35 @@ export function ChatBubble({
     }
   }, [showMeta])
 
-  if (isUser) {
+  if (isUser || isOther) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="flex justify-end"
+        layout={animateLayoutShift ? "position" : false}
+        initial={{
+          opacity: 0.35,
+          scale: isOther ? 0.94 : 0.9,
+          x: isOther ? -8 : 8,
+          y: 88,
+          filter: "blur(6px)",
+        }}
+        animate={{ opacity: 1, scale: 1, x: 0, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{
+          duration: 0.44,
+          ease: [0.16, 1, 0.3, 1],
+          layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+        }}
+        className={cn("flex", isOther ? "justify-start" : "justify-end")}
+        style={{ originX: isOther ? 0 : 1, originY: 1 }}
       >
-        <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-[#0D4FFB] px-3 py-2 text-sm whitespace-pre-wrap text-white shadow-sm">
+        <div
+          className={cn(
+            "max-w-[80%] px-3 py-2 text-sm whitespace-pre-wrap",
+            isOther
+              ? "rounded-2xl rounded-bl-sm bg-slate-200 text-slate-900"
+              : "rounded-2xl rounded-br-sm bg-[#0D4FFB] text-white"
+          )}
+        >
           {message.text}
         </div>
       </motion.div>
@@ -83,10 +107,14 @@ export function ChatBubble({
 
   return (
     <motion.div
+      layout={animateLayoutShift ? "position" : false}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{
+        duration: 0.2,
+        layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+      }}
       className="group flex"
     >
       <div className="relative w-full max-w-none">
@@ -114,7 +142,14 @@ export function ChatBubble({
         </motion.div>
 
         <TooltipProvider>
-          <div className="mt-0.5 flex items-center gap-1 pl-2 text-muted-foreground">
+          <div
+            className={cn(
+              "mt-0.5 flex items-center gap-1 pl-2 text-muted-foreground transition-opacity",
+              showActionsOnHover && !showMeta
+                ? "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
+                : "opacity-100"
+            )}
+          >
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

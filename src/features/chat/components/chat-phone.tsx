@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
+import Lenis from "lenis"
 import { AnimatePresence, motion } from "motion/react"
 
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { ChatBubble } from "@/features/chat/components/chat-bubble"
 import { ChatComposer } from "@/features/chat/components/chat-composer"
@@ -16,6 +16,8 @@ interface ChatPhoneProps {
   showStatusIndicator: boolean
   activeStreamMessageId: string | null
   activeModel: string
+  showResponseIconsOnHover: boolean
+  moveBubblesOnIncomingMessage: boolean
   onDraftChange: (value: string) => void
   onSend: () => void
   onRedoAssistantMessage: (assistantMessageId: string) => void
@@ -29,13 +31,18 @@ export function ChatPhone({
   showStatusIndicator,
   activeStreamMessageId,
   activeModel,
+  showResponseIconsOnHover,
+  moveBubblesOnIncomingMessage,
   onDraftChange,
   onSend,
   onRedoAssistantMessage,
   onUseStarterPrompt,
 }: ChatPhoneProps) {
   const endRef = useRef<HTMLDivElement | null>(null)
-  const hasSentMessage = messages.some((message) => message.role === "user")
+  const scrollWrapperRef = useRef<HTMLDivElement | null>(null)
+  const scrollContentRef = useRef<HTMLDivElement | null>(null)
+  const lenisRef = useRef<Lenis | null>(null)
+  const hasSentMessage = messages.some((message) => message.role !== "assistant")
   const assistantMessageCount = messages.filter(
     (message) => message.role === "assistant"
   ).length
@@ -49,21 +56,76 @@ export function ChatPhone({
   }
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({
-      behavior: isTyping || showStatusIndicator ? "auto" : "smooth",
+    const wrapper = scrollWrapperRef.current
+    const content = scrollContentRef.current
+    if (!wrapper || !content) {
+      return
+    }
+
+    const lenis = new Lenis({
+      wrapper,
+      content,
+      autoRaf: true,
+      smoothWheel: true,
+      syncTouch: true,
+      lerp: 0.14,
     })
+
+    lenisRef.current = lenis
+
+    return () => {
+      lenis.destroy()
+      lenisRef.current = null
+    }
+  }, [])
+
+  useLayoutEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      if (lenisRef.current && endRef.current) {
+        lenisRef.current.resize()
+        lenisRef.current.scrollTo(endRef.current, {
+          duration: 0.55,
+          easing: (t) => 1 - Math.pow(1 - t, 3),
+          force: true,
+        })
+        return
+      }
+
+      endRef.current?.scrollIntoView({
+        behavior: "smooth",
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+    }
   }, [messages, isTyping, showStatusIndicator, activeStreamMessageId])
+
+  useEffect(() => {
+    if (lenisRef.current && endRef.current) {
+      lenisRef.current.resize()
+    }
+  }, [])
 
   return (
     <motion.div
-      layout
-      className="phone-frame mx-auto flex h-full max-h-[740px] w-full max-w-[640px] flex-col overflow-hidden border-[1px]"
+      className="phone-frame relative mx-auto flex h-full max-h-[740px] w-full max-w-[640px] flex-col overflow-hidden border-[1px]"
     >
       <div className="flex h-full min-h-0 flex-col bg-linear-to-b from-slate-50">
         <Separator />
 
-        <ScrollArea className="min-h-0 flex-1 px-6 py-6 pt-0 pb-0">
-          <div className="space-y-3 pb-3 pt-6">
+        <div
+          ref={scrollWrapperRef}
+          className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-6 pt-0 pb-0"
+        >
+          <motion.div
+            ref={scrollContentRef}
+            layout={moveBubblesOnIncomingMessage}
+            transition={{
+              layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
+            }}
+            className="space-y-3 pb-3 pt-6"
+          >
             <AnimatePresence initial={false}>
               <ChatStarterPrompts
                 model={activeModel}
@@ -75,6 +137,8 @@ export function ChatPhone({
                   message={message}
                   isStreaming={message.id === activeStreamMessageId}
                   isBusy={isTyping}
+                  animateLayoutShift={moveBubblesOnIncomingMessage}
+                  showActionsOnHover={showResponseIconsOnHover}
                   onRedo={
                     message.role === "assistant" && canRedo(index)
                       ? onRedoAssistantMessage
@@ -85,8 +149,8 @@ export function ChatPhone({
               {showStatusIndicator ? <TypingStatus /> : null}
             </AnimatePresence>
             <div ref={endRef} />
-          </div>
-        </ScrollArea>
+          </motion.div>
+        </div>
 
         <div className="bg-white/70 px-6 py-6">
           <ChatComposer

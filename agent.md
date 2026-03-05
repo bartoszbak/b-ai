@@ -14,19 +14,28 @@ Build and maintain a React + Vite AI chat demo with:
 ## 2) Tech Stack
 
 - Frontend: React 19 + TypeScript + Vite
-- Styling: Tailwind CSS v4 + shadcn/ui
+- Styling: Tailwind CSS v4 + shadcn/ui (backed by `radix-ui` + `@base-ui/react`)
 - Animation: `motion` (motion.dev)
-- Backend: Express (`server/index.js`)
+- Text scramble: `use-scramble` (used in `TypingStatus`)
+- Backend: Express 5 (`server/index.js`)
 - AI provider: OpenRouter API
 
 ## 3) Project Layout
 
 - `src/App.tsx`: app orchestration, state, chat flow, status indicator flow, stats
-- `src/features/chat/components/*`: chat UI (phone, bubbles, composer, typing status, prompts)
-- `src/features/chat/api/send-chat.ts`: client streaming request handling
-- `src/features/chat/types.ts`: shared domain types
-- `src/features/settings/components/settings-panel.tsx`: settings UI
-- `server/index.js`: `/api/chat` and `/api/chat/stream` proxy to OpenRouter
+- `src/features/chat/components/chat-phone.tsx`: phone frame shell, scroll management, layout
+- `src/features/chat/components/chat-bubble.tsx`: message rendering (user + assistant), action toolbar, meta popup
+- `src/features/chat/components/chat-composer.tsx`: input form with animated rotating placeholder
+- `src/features/chat/components/chat-starter-prompts.tsx`: starter prompt chips always visible in chat
+- `src/features/chat/components/typing-status.tsx`: animated scrambled status indicator
+- `src/features/chat/api/send-chat.ts`: client streaming request handling (SSE parser, abort, timeout)
+- `src/features/chat/types.ts`: shared domain types (`ChatMessage`, `ChatSettings`, `ChatMessageMeta`)
+- `src/features/chat/constants.ts`: `TYPING_STATES`, `TYPING_STATE_MS`, `TYPING_MIN_DURATION_MS`
+- `src/features/chat/data/chat-prompts.ts`: `CHAT_PROMPTS` definitions and `CHAT_PROMPT_PLACEHOLDERS`
+- `src/features/chat/data/starter-messages.ts`: initial messages array (currently empty)
+- `src/features/chat/utils/create-assistant-reply.ts`: mock reply generator for offline mode
+- `src/features/settings/components/settings-panel.tsx`: settings UI with stats display
+- `server/index.js`: `/api/health`, `/api/chat`, `/api/chat/stream` — proxy to OpenRouter
 - `src/components/ui/*`: shadcn primitives
 
 ## 4) Runtime Contracts
@@ -38,6 +47,19 @@ Build and maintain a React + Vite AI chat demo with:
   - `OPENROUTER_X_TITLE` (optional)
   - `PORT` (default `8787`)
 - Never expose provider secrets in client code.
+- Dev: run both client and server with `npm run dev` (uses `concurrently`).
+- Build: `npm run build` (TypeScript check + Vite bundle). Preview: `npm run preview`.
+
+### npm scripts
+
+| Script | What it does |
+|---|---|
+| `npm run dev` | Start both client (Vite) and server (node --watch) concurrently |
+| `npm run dev:client` | Vite dev server only |
+| `npm run dev:server` | Express server only (`node --watch server/index.js`) |
+| `npm run build` | `tsc -b && vite build` |
+| `npm run lint` | ESLint across the project |
+| `npm run preview` | Preview the production build |
 
 ## 5) Non-Negotiable Engineering Rules
 
@@ -51,18 +73,20 @@ Build and maintain a React + Vite AI chat demo with:
 ## 6) Chat UX Rules (Current Product Behavior)
 
 - Chat runs inside a phone mockup (`phone-frame`) with internal scrolling.
-- Assistant messages are plain text style (not bubble cards).
-- User messages are right-aligned bubbles.
-- Status indicator has states:
+- Assistant messages are plain text style (not bubble cards); streaming shows a blinking cursor.
+- User messages are right-aligned blue bubbles.
+- Status indicator (`TypingStatus`) cycles through states using `use-scramble` for a text-scramble effect:
   - `Thinking...`
   - `Processing...`
   - `Typing...`
-- Indicator should appear as a message in the stream and be positioned under the last message.
-- Starter prompts are part of chat UI and remain visible even after conversation begins.
-- AI message controls:
-  - Copy
-  - Redo
-  - More (`...`) popup with metadata
+- Indicator appears as a list item after the last message (inside `AnimatePresence`).
+- Starter prompts are always visible in the chat scroll area; clicking one **prefills the composer draft** (does not auto-submit).
+- Composer placeholder rotates through `CHAT_PROMPT_PLACEHOLDERS` (every 2800ms) after the first message is sent, pausing when the user focuses the input.
+- Assistant message action toolbar (visible on every assistant bubble):
+  - **Copy** — copies text to clipboard
+  - **Branch out** (`GitBranch` icon) — UI only, no behavior wired yet
+  - **Regenerate** (`RotateCcw`) — re-runs the assistant reply for that turn
+  - **More** (`...`) — toggles inline meta popup (model, temperature, tokens, latency, char/word count, source)
 
 ## 7) Implementation Patterns
 
@@ -76,10 +100,16 @@ Build and maintain a React + Vite AI chat demo with:
 
 ## 8) API Behavior Expectations
 
-- `/api/chat`: non-stream JSON response `{ text, usage? }`
-- `/api/chat/stream`: event-stream chunks with typed events (`chunk`, `usage`, `done`, `error`)
+- `/api/health`: GET — returns `{ ok: true }`, useful for uptime checks.
+- `/api/chat`: POST — non-streaming JSON response `{ text, usage? }`. Server timeout: 45s.
+- `/api/chat/stream`: POST — SSE event-stream with typed events (`chunk`, `usage`, `done`, `error`). Server timeout: 60s. Client timeout: 60s.
+- Both chat endpoints accept `{ messages, settings }` in the request body.
+- Server trims conversation history to the **last 20 messages** before sending to OpenRouter.
+- `max_tokens` is `220` when `conciseMode` is `true`, `500` otherwise.
+- System prompt is derived from `settings.persona`; falls back to `"You are a helpful AI assistant."`.
 - Timeouts and abort controllers must be preserved.
 - Any change to server payload structure requires matching update in frontend parser.
+- Client aborts the stream if the connection closes (server listens on `res` `close` event).
 
 ## 9) Coding Style
 

@@ -135,3 +135,12 @@
   corner-shape: superellipse(1.5);
   border-radius: 64px;
 }
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

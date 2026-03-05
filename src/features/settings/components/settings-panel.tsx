@@ -166,18 +166,6 @@ export function SettingsPanel({
             />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="move-bubbles-on-incoming-message">
-              Move bubbles on incoming message
-            </Label>
-            <Switch
-              id="move-bubbles-on-incoming-message"
-              checked={settings.moveBubblesOnIncomingMessage}
-              onCheckedChange={(checked) =>
-                onSettingsChange({ moveBubblesOnIncomingMessage: checked })
-              }
-            />
-          </div>
-          <div className="flex items-center justify-between">
             <Label htmlFor="send-as-other-person">
               Send as other person
             </Label>

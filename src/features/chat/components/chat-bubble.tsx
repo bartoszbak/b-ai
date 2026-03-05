@@ -16,7 +16,6 @@ interface ChatBubbleProps {
   message: ChatMessage
   isStreaming?: boolean
   isBusy?: boolean
-  animateLayoutShift?: boolean
   showActionsOnHover?: boolean
   onRedo?: (assistantMessageId: string) => void
 }
@@ -38,7 +37,6 @@ export function ChatBubble({
   message,
   isStreaming = false,
   isBusy = false,
-  animateLayoutShift = false,
   showActionsOnHover = false,
   onRedo,
 }: ChatBubbleProps) {
@@ -73,7 +71,6 @@ export function ChatBubble({
   if (isUser || isOther) {
     return (
       <motion.div
-        layout={animateLayoutShift ? "position" : false}
         initial={{
           opacity: 0.35,
           scale: isOther ? 0.94 : 0.9,
@@ -86,7 +83,6 @@ export function ChatBubble({
         transition={{
           duration: 0.44,
           ease: [0.16, 1, 0.3, 1],
-          layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
         }}
         className={cn("flex", isOther ? "justify-start" : "justify-end")}
         style={{ originX: isOther ? 0 : 1, originY: 1 }}
@@ -107,14 +103,10 @@ export function ChatBubble({
 
   return (
     <motion.div
-      layout={animateLayoutShift ? "position" : false}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{
-        duration: 0.2,
-        layout: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
-      }}
+      transition={{ duration: 0.2 }}
       className="group flex"
     >
       <div className="relative w-full max-w-none">

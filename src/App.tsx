@@ -16,7 +16,6 @@ const initialSettings: ChatSettings = {
   useOpenRouter: true,
   showProcessingIndicator: true,
   showResponseIconsOnHover: false,
-  moveBubblesOnIncomingMessage: false,
   sendAsOtherPerson: false,
   conciseMode: false,
   persona: "Helpful AI",
@@ -482,7 +481,6 @@ function App() {
             activeStreamMessageId={activeStreamMessageId}
             activeModel={settings.model}
             showResponseIconsOnHover={settings.showResponseIconsOnHover}
-            moveBubblesOnIncomingMessage={settings.moveBubblesOnIncomingMessage}
             onDraftChange={setDraft}
             onSend={sendMessage}
             onRedoAssistantMessage={redoAssistantMessage}
